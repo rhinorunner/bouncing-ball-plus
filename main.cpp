@@ -8,10 +8,29 @@
 #include "lib.hpp"
 #include "ent.hpp"
 
-
-
 int main() 
 {
+	BetterRand rand;
+	ENTS = {};
+	// append ENTS with random ents
+	for (int i = 0; i < 100; i++) {
+		ENTS.push_back
+		(
+			Ent
+			(
+				(rand.genRand() % R_SCREENWIDTH),
+				(rand.genRand() % R_SCREENHEIGHT),
+				((rand.genRand() % 3600) / 10),
+				((rand.genRand() % 150) / 10) + 1,
+				{
+					(uint8_t)(rand.genRand() % 256),
+					(uint8_t)(rand.genRand() % 256),
+					(uint8_t)(rand.genRand() % 256)
+				}
+			)
+		);
+	}
+
 	// the window!
 	SDL_Window* R_WINDOW = NULL;
 
@@ -57,13 +76,21 @@ int main()
 			case SDLK_ESCAPE:
 				quit = true;
 				break;
+			case SDLK_r:
+				// reset all ent positions to middle of the screen
+				float midX = R_SCREENWIDTH / 2, midY = R_SCREENHEIGHT / 2;
+				for (uint8_t i = 0; i < ENTS.size(); ++i) {
+					ENTS[i].X = midX;
+					ENTS[i].Y = midY;
+				}
+				break;
 			}
 		}
+		std::vector<std::thread> threads;
 		// entity loop
 		for (uint8_t i = 0; i < ENTS.size(); ++i) 
 		{
 			// update and collision detection
-			
 			auto next = ENTS[i].nextUpdate(deltaTime);
 			// too far right
 			if (next.first > R_SCREENWIDTH) {
@@ -81,14 +108,14 @@ int main()
 			if (next.second < 0) {
 				ENTS[i].reverseAngle(false);
 			}
-			
+
 			ENTS[i].update(deltaTime);
 				
 			SDL_SetRenderDrawColor(
 				R_RENDERER, 
-				ENTS[i].color.R, 
-				ENTS[i].color.G, 
-				ENTS[i].color.B, 
+				ENTS[i].color.R,
+				ENTS[i].color.G,
+				ENTS[i].color.B,
 				255
 			);
 			SDL_RenderDrawPoint(R_RENDERER, (uint16_t)ENTS[i].X, (uint16_t)ENTS[i].Y);
@@ -96,7 +123,7 @@ int main()
 		// present render
 		SDL_RenderPresent(R_RENDERER);
 		SDL_SetRenderDrawColor(R_RENDERER, R_BACKCOLOR.R, R_BACKCOLOR.G, R_BACKCOLOR.B, 255);
-		SDL_RenderClear(R_RENDERER);
+		//SDL_RenderClear(R_RENDERER);
 		//SDL_Delay(R_FRAMEDELAY);
 
 		timeOld = timeNew;

@@ -13,9 +13,9 @@ typedef struct RGB_t {
 
 
 // screen width
-static constexpr uint16_t R_SCREENWIDTH  = 640;
+static constexpr uint16_t R_SCREENWIDTH  = 1020;
 // screen height
-static constexpr uint16_t R_SCREENHEIGHT = 480;
+static constexpr uint16_t R_SCREENHEIGHT = 890;
 
 // background color
 static const RGB_t R_BACKCOLOR = {0,0,0};
