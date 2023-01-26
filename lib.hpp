@@ -27,6 +27,10 @@ static constexpr uint16_t R_FRAMEDELAY = 50;
 // if true, dont clear the screen after each frame
 static constexpr bool R_NOCLEAR = false;
 
+// 0 = bounce off walls
+// 1 = warp around screen
+static constexpr uint8_t R_ENTPHYS = 0;
+
 // path
 static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYCASTING/";
 

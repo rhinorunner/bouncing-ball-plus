@@ -34,7 +34,7 @@ public:
 	// { { {X,Y}, {LIFE,{R,G,B} }} , ... }
 	std::vector<std::pair<std::pair<float, float>, std::pair<uint16_t,RGB_t>>> trails {};
 	// how long trails should stay
-	uint16_t trailLife = 100;
+	uint16_t trailLife = 300;
 	// trail colors as lifetime goes on
 	// last trail will be defaulted to if lifetime exceeds size
 	std::vector<RGB_t> trailColors {color};
