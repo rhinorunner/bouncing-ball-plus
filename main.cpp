@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <fstream>
+#include <string>
 #include <SDL.h>
 // for some reason this is needed so that it works
 // idk just dont touch it
@@ -10,30 +12,72 @@
 
 // R = set all ent positions to middle of screen
 // C = clear screen
+// SPACE = pause/unpause
 
 int main() 
 {
 	BetterRand rand;
 	ENTS = {};
 	// append ENTS with random ents
-	for (int i = 0; i < 1; i++) {
-		ENTS.push_back
+	for (int i = 0; i < 100; i++) {
+		Ent new_ent
 		(
-			Ent
-			(
-				
-(R_SCREENWIDTH / 2),
-(R_SCREENHEIGHT / 2),
-((rand.genRand() % 360)),
-(4),
-{
-	255,
-	255,
-	255
-}
-
-			)
+			((rand.genRand() % R_SCREENWIDTH)),
+			((rand.genRand() % R_SCREENHEIGHT)),
+			((rand.genRand() % 360)),
+			(3),
+			{
+				0,
+				255,
+				0
+			}
 		);
+
+		// new_ent.useSprite = 1;
+		// fill sprite with a square of random colors
+		for (uint16_t C = 0; C < 4; ++C) 
+		{
+			std::vector<char> filler {};
+			for (uint16_t R = 0; R < 4; ++R) 
+				filler.push_back('#');
+			new_ent.sprite.push_back({filler});
+		}
+		new_ent.colorKey.push_back({'#',new_ent.color});
+		
+		// set trail color to ent color, slowly fading
+		// fade to black
+		for (uint16_t i = 1; i < new_ent.trailLife; ++i) {
+			int16_t R = (new_ent.color.R - (new_ent.color.R / new_ent.trailLife) * 2*i);
+			if (R > 255) R = 255; if (R < 0) R = 0;
+			int16_t G = (new_ent.color.G - (new_ent.color.G / new_ent.trailLife) * 2*i);
+			if (G > 255) G = 255; if (G < 0) G = 0;
+			int16_t B = (new_ent.color.B - (new_ent.color.B / new_ent.trailLife) * 2*i);
+			if (B > 255) B = 255; if (B < 0) B = 0;
+			new_ent.trailColors.insert(
+				new_ent.trailColors.begin(),
+				{(uint8_t)R,(uint8_t)G,(uint8_t)B}
+			);
+			if (!(R+B+G)) break;
+		}
+		
+		// use file sprite?
+		if (new_ent.useSprite == 2)
+		{
+			std::ifstream infile(STR_PATH + "sprites/" + new_ent.spriteFile);
+			std::string line;
+			std::vector<std::vector<char>> temp{{}};
+
+			while (std::getline(infile, line)) {
+				std::vector<char> row;
+				for (char& c : line) {
+					row.push_back(c);
+				}
+
+				temp.push_back(row);
+			}
+			new_ent.sprite = temp;
+		}
+		ENTS.push_back(new_ent);
 	}
 
 	// the window!
@@ -92,6 +136,19 @@ int main()
 			case SDLK_c:
 				SDL_RenderClear(R_RENDERER);
 				break;
+			// pause if spacebar is pressed
+			case SDLK_SPACE:
+				while (true) {
+					SDL_PollEvent(&e);
+					if (e.type == SDL_KEYDOWN) {
+						if (e.key.keysym.sym == SDLK_SPACE)  break;
+						if (e.key.keysym.sym == SDLK_ESCAPE) { quit = true; break; }
+					}
+					if (e.type == SDL_QUIT) quit = true; 
+				}
+				// make sure deltatime isnt messed up
+				timeNew = clock();
+				break;
 			}
 		}
 		std::vector<std::thread> threads;
@@ -122,6 +179,32 @@ int main()
 			}
 
 			ENTS[i].update(deltaTime);
+			
+			// update trails
+			if (ENTS[i].useTrails) 
+			{
+				// remove old trails
+				// also update trail colors
+				for (uint16_t S = 0; S < ENTS[i].trails.size(); ++S) {
+					ENTS[i].trails[S].second.first --;
+					if (ENTS[i].trails[S].second.first <= 0) {
+						ENTS[i].trails.erase(ENTS[i].trails.begin() + S);
+					}
+					RGB_t COL;
+					// if the lifetime exceeds the trailColor size use the last element
+					if (ENTS[i].trails[S].second.first >= ENTS[i].trailColors.size())
+						COL = ENTS[i].trailColors[-1];
+					else COL = ENTS[i].trailColors[ENTS[i].trails[S].second.first];
+					ENTS[i].trails[S].second.second = COL;
+				}				
+				// add a new trail
+				ENTS[i].trails.push_back(
+					{
+						{ENTS[i].X, ENTS[i].Y},
+						{ENTS[i].trailLife,ENTS[i].trailColors[0]}
+					}
+				);
+			}
 				
 			SDL_SetRenderDrawColor(
 				R_RENDERER, 
@@ -130,34 +213,84 @@ int main()
 				ENTS[i].color.B,
 				255
 			);
-			SDL_RenderDrawPoint(R_RENDERER, (uint16_t)ENTS[i].X, (uint16_t)ENTS[i].Y);
 			// blit pixels for ent sprite
 			if (ENTS[i].useSprite) {
 				for (uint16_t y = 0; y < ENTS[i].sprite.size(); ++y)
 				{
 					for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x) 
 					{
-						// set the color as defined in the key
-						RGB_t setColor = {255,255,255};
-						for (uint16_t C = 0; C < ENTS[i].colorKey.size(); ++C) 
-						{
-							if (ENTS[i].sprite[y][x] == ENTS[i].colorKey[C].first)
-								setColor = ENTS[i].colorKey[C].second;
-						}
 						SDL_SetRenderDrawColor(
 							R_RENDERER,
-							setColor.R,
-							setColor.G,
-							setColor.B,
+							ENTS[i].color.R,
+							ENTS[i].color.G,
+							ENTS[i].color.B,
 							255
 						);
 						// draw the point
 						SDL_RenderDrawPoint(
 							R_RENDERER, 
-							(uint16_t)ENTS[i].X + x,
-							(uint16_t)ENTS[i].Y + y
+							ENTS[i].X + x,
+							ENTS[i].Y + y
 						);					
 					}
+				}
+			}
+			else SDL_RenderDrawPoint(R_RENDERER, (uint16_t)ENTS[i].X, (uint16_t)ENTS[i].Y);
+			
+			// blit trails
+			if (ENTS[i].useTrails) {
+				for (uint16_t S = 0; S < ENTS[i].trails.size(); ++S) {
+					SDL_SetRenderDrawColor(
+						R_RENDERER,
+						ENTS[i].trails[S].second.second.R,
+						ENTS[i].trails[S].second.second.G,
+						ENTS[i].trails[S].second.second.B,
+						255
+					);
+					// blit sprite for trail
+					if (ENTS[i].useTrails) 
+					{
+						for (uint16_t y = 0; y < ENTS[i].sprite.size(); ++y)
+						{
+							for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x)
+							{
+								// set the color as defined in the key
+								RGB_t setColor = R_BACKCOLOR;
+								/*for (uint16_t C = 0; C < ENTS[i].trailColorKey.size(); ++C)
+								{
+									if (ENTS[i].sprite[y][x] == ENTS[i].trailColorKey[C].first)
+										setColor = ENTS[i].trailColorKey[C].second;
+								}*/
+								SDL_SetRenderDrawColor(
+									R_RENDERER,
+									ENTS[i].trails[S].second.second.R,
+									ENTS[i].trails[S].second.second.G,
+									ENTS[i].trails[S].second.second.B,
+									255
+								);
+								// draw the point
+								SDL_RenderDrawPoint(
+									R_RENDERER,
+									ENTS[i].trails[S].first.first + x,
+									ENTS[i].trails[S].first.second + y
+								);
+							}
+						}
+						if (0)
+						std::cout 
+							<< "rendered ["
+							<< (uint16_t)ENTS[i].trails[S].second.second.R
+							<< ","
+							<< (uint16_t)ENTS[i].trails[S].second.second.G
+							<< ","
+							<< (uint16_t)ENTS[i].trails[S].second.second.B
+							<< "] at ["
+							<< (uint16_t)ENTS[i].trails[S].first.first
+							<< ","
+							<< (uint16_t)ENTS[i].trails[S].first.second
+							<< "]\n";
+					}
+					else SDL_RenderDrawPoint(R_RENDERER, (uint16_t)ENTS[i].trails[S].first.first, (uint16_t)ENTS[i].trails[S].first.second);
 				}
 			}
 		}

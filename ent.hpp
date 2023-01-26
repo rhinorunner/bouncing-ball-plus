@@ -12,24 +12,32 @@ public:
 	float angle;
 	float velocity;
 	RGB_t color;
-	bool useSprite = true;
-	std::vector<std::vector<char>> sprite = 
-	{
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-		{'1','1','1','1','1','1','1','1','1','1','1','1'},
-	};
+	// 0 = no sprite
+	// 1 = use set sprite
+	// 2 = use file sprite
+	uint8_t useSprite = 1;
+	std::string spriteFile = "";
+	std::vector<std::vector<char>> sprite {};
 	std::vector<std::pair<char,RGB_t>> colorKey = 
 	{
-		{'1', {255,255,255}}
+		{'R',{255,0  ,0  }},
+		{'G',{0  ,255,0  }},
+		{'B',{0  ,0  ,255}},
+		{'W',{255,255,255}},
+		{'b',{0  ,0  ,0  }},
+		{'Y',{255,255,0  }},
+		{'P',{255,0  ,255}},
 	};
+	// use trails?
+	bool useTrails = true;
+	// holds the trails
+	// { { {X,Y}, {LIFE,{R,G,B} }} , ... }
+	std::vector<std::pair<std::pair<float, float>, std::pair<uint16_t,RGB_t>>> trails {};
+	// how long trails should stay
+	uint16_t trailLife = 100;
+	// trail colors as lifetime goes on
+	// last trail will be defaulted to if lifetime exceeds size
+	std::vector<RGB_t> trailColors {color};
 	
 	Ent
 	(

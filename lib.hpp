@@ -27,6 +27,8 @@ static constexpr uint16_t R_FRAMEDELAY = 50;
 // if true, dont clear the screen after each frame
 static constexpr bool R_NOCLEAR = false;
 
+// path
+static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYCASTING/";
 
 typedef struct Trail_t {
 	float X;
