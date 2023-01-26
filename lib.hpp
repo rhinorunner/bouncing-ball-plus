@@ -25,7 +25,7 @@ static const RGB_t R_BACKCOLOR = {0,0,0};
 static constexpr uint16_t R_FRAMEDELAY = 50;
 
 // if true, dont clear the screen after each frame
-static constexpr bool R_NOCLEAR = true;
+static constexpr bool R_NOCLEAR = false;
 
 
 typedef struct Trail_t {

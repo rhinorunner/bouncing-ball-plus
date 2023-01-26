@@ -8,25 +8,30 @@
 #include "lib.hpp"
 #include "ent.hpp"
 
+// R = set all ent positions to middle of screen
+// C = clear screen
+
 int main() 
 {
 	BetterRand rand;
 	ENTS = {};
 	// append ENTS with random ents
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 1; i++) {
 		ENTS.push_back
 		(
 			Ent
 			(
-				(rand.genRand() % R_SCREENWIDTH),
-				(rand.genRand() % R_SCREENHEIGHT),
-				((rand.genRand() % 3600) / 10),
-				((rand.genRand() % 150) / 10) + 1,
-				{
-					(uint8_t)(rand.genRand() % 256),
-					(uint8_t)(rand.genRand() % 256),
-					(uint8_t)(rand.genRand() % 256)
-				}
+				
+(R_SCREENWIDTH / 2),
+(R_SCREENHEIGHT / 2),
+((rand.genRand() % 360)),
+(4),
+{
+	255,
+	255,
+	255
+}
+
 			)
 		);
 	}
@@ -71,6 +76,7 @@ int main()
 					
 		// key press
 		if (e.type == SDL_KEYDOWN) {
+			float midX = R_SCREENWIDTH / 2, midY = R_SCREENHEIGHT / 2;
 			switch (e.key.keysym.sym)
 			{
 			case SDLK_ESCAPE:
@@ -78,22 +84,28 @@ int main()
 				break;
 			case SDLK_r:
 				// reset all ent positions to middle of the screen
-				float midX = R_SCREENWIDTH / 2, midY = R_SCREENHEIGHT / 2;
-				for (uint8_t i = 0; i < ENTS.size(); ++i) {
+				for (uint16_t i = 0; i < ENTS.size(); ++i) {
 					ENTS[i].X = midX;
 					ENTS[i].Y = midY;
 				}
+				break;
+			case SDLK_c:
+				SDL_RenderClear(R_RENDERER);
 				break;
 			}
 		}
 		std::vector<std::thread> threads;
 		// entity loop
-		for (uint8_t i = 0; i < ENTS.size(); ++i) 
+		for (uint16_t i = 0; i < ENTS.size(); ++i) 
 		{
 			// update and collision detection
 			auto next = ENTS[i].nextUpdate(deltaTime);
+			// for sprite collision calculation, added to coordinates
+			uint16_t rightSide  = (ENTS[i].useSprite ? ENTS[i].sprite[0].size() : 0);
+			uint16_t bottomSide = (ENTS[i].useSprite ? ENTS[i].sprite   .size() : 0);
+			
 			// too far right
-			if (next.first > R_SCREENWIDTH) {
+			if (next.first + rightSide > R_SCREENWIDTH) {
 				ENTS[i].reverseAngle(true);
 			}
 			// too far left
@@ -101,7 +113,7 @@ int main()
 				ENTS[i].reverseAngle(true);
 			}
 			// too far down
-			if (next.second > R_SCREENHEIGHT) {
+			if (next.second + bottomSide > R_SCREENHEIGHT) {
 				ENTS[i].reverseAngle(false);
 			}
 			// too far up
@@ -119,11 +131,40 @@ int main()
 				255
 			);
 			SDL_RenderDrawPoint(R_RENDERER, (uint16_t)ENTS[i].X, (uint16_t)ENTS[i].Y);
+			// blit pixels for ent sprite
+			if (ENTS[i].useSprite) {
+				for (uint16_t y = 0; y < ENTS[i].sprite.size(); ++y)
+				{
+					for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x) 
+					{
+						// set the color as defined in the key
+						RGB_t setColor = {255,255,255};
+						for (uint16_t C = 0; C < ENTS[i].colorKey.size(); ++C) 
+						{
+							if (ENTS[i].sprite[y][x] == ENTS[i].colorKey[C].first)
+								setColor = ENTS[i].colorKey[C].second;
+						}
+						SDL_SetRenderDrawColor(
+							R_RENDERER,
+							setColor.R,
+							setColor.G,
+							setColor.B,
+							255
+						);
+						// draw the point
+						SDL_RenderDrawPoint(
+							R_RENDERER, 
+							(uint16_t)ENTS[i].X + x,
+							(uint16_t)ENTS[i].Y + y
+						);					
+					}
+				}
+			}
 		}
 		// present render
 		SDL_RenderPresent(R_RENDERER);
 		SDL_SetRenderDrawColor(R_RENDERER, R_BACKCOLOR.R, R_BACKCOLOR.G, R_BACKCOLOR.B, 255);
-		//SDL_RenderClear(R_RENDERER);
+		if (!R_NOCLEAR) SDL_RenderClear(R_RENDERER);
 		//SDL_Delay(R_FRAMEDELAY);
 
 		timeOld = timeNew;
