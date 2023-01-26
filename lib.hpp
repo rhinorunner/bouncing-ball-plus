@@ -4,18 +4,19 @@
 #include <iostream>
 #include <chrono>
 
+#pragma pack(push, 1)
 typedef struct RGB_t {
 	uint8_t R;
 	uint8_t G;
 	uint8_t B;
 };
-
+#pragma pack(pop)
 
 
 // screen width
-static constexpr uint16_t R_SCREENWIDTH  = 1020;
+static constexpr uint16_t R_SCREENWIDTH  = 1920;
 // screen height
-static constexpr uint16_t R_SCREENHEIGHT = 890;
+static constexpr uint16_t R_SCREENHEIGHT = 1080;
 
 // background color
 static const RGB_t R_BACKCOLOR = {0,0,0};
@@ -23,6 +24,8 @@ static const RGB_t R_BACKCOLOR = {0,0,0};
 // frame delay
 static constexpr uint16_t R_FRAMEDELAY = 50;
 
+// if true, dont clear the screen after each frame
+static constexpr bool R_NOCLEAR = true;
 
 
 typedef struct Trail_t {
