@@ -21,12 +21,12 @@ int main()
 		(
 			((rand.genRand() % R_SCREENWIDTH)),
 			((rand.genRand() % R_SCREENHEIGHT)),
-			((rand.genRand() % (360/16)) * (360/16)),
+			(((i%16) % (360 / 16)) * (360 / 16)),
 			((float)(rand.genRand() % 10)/10)+2,
 			{
-				(uint8_t)((rand.genRand() % 200)),
-				(uint8_t)((rand.genRand() % 100)),
-				(uint8_t)((rand.genRand() % 100))
+				(uint8_t)((rand.genRand() % 10)+90+(i % 2 ? 100 : 0)),
+				(uint8_t)((rand.genRand() % 10)+90+(i % 2 ? 100 : 0)),
+				(uint8_t)((rand.genRand() % 10)+90+(i % 2 ? 0 : 100))
 			}
 		);
 
@@ -136,6 +136,8 @@ int main()
 	clock_t timeNew = clock();
 	float deltaTime = 0;
 	float time_calib = .05;
+	bool turningLeft = false;
+	bool turningRight = false;
 	
 	while(!quit) 
 	{
@@ -185,6 +187,15 @@ int main()
 				}
 				break;
 
+			// change angle by +1
+			case SDLK_LEFT:
+				turningLeft = true;
+				break;
+			// change angle by -1
+			case SDLK_RIGHT:
+				turningRight = true;
+				break;
+
 			// clear screen (only works with no clear)
 			case SDLK_KP_0:
 				SDL_RenderClear(R_RENDERER);
@@ -214,11 +225,28 @@ int main()
 				break;
 			}
 		}
+		if (e.type == SDL_KEYUP) {
+			switch (e.key.keysym.sym) {
+			case SDLK_LEFT:
+				turningLeft = false;
+				break;
+			case SDLK_RIGHT:
+				turningRight = false;
+				break;
+			}
+		}
 
 		std::vector<std::thread> threads;
 		// entity loop
 		for (uint16_t i = 0; i < ENTS.size(); ++i) 
 		{
+			if (turningLeft) {
+				ENTS[i].angle -= R_ANGLESTEP;
+			}
+			if (turningRight) {
+				ENTS[i].angle += R_ANGLESTEP;
+			}
+
 			// update and collision detection
 			auto next = ENTS[i].nextUpdate(deltaTime);
 			// for sprite collision calculation, added to coordinates
@@ -228,22 +256,22 @@ int main()
 			// too far right
 			if (next.first + rightSide > R_SCREENWIDTH) {
 				if (!R_PHYSTYPE) ENTS[i].reverseAngle(true);
-				else if (R_PHYSTYPE == 1) ENTS[i].X = 0;
+				else if (R_PHYSTYPE == 1) ENTS[i].X = 1;
 			}
 			// too far left
 			if (next.first < 0) {
 				if (!R_PHYSTYPE) ENTS[i].reverseAngle(true);
-				else if (R_PHYSTYPE == 1) ENTS[i].X = R_SCREENWIDTH;
+				else if (R_PHYSTYPE == 1) ENTS[i].X = R_SCREENWIDTH-1;
 			}
 			// too far down
 			if (next.second + bottomSide > R_SCREENHEIGHT) {
 				if (!R_PHYSTYPE) ENTS[i].reverseAngle(false);
-				else if (R_PHYSTYPE == 1) ENTS[i].Y = 0;
+				else if (R_PHYSTYPE == 1) ENTS[i].Y = 1;
 			}
 			// too far up
 			if (next.second < 0) {
 				if (!R_PHYSTYPE) ENTS[i].reverseAngle(false);
-				else if (R_PHYSTYPE == 1) ENTS[i].Y = R_SCREENHEIGHT;
+				else if (R_PHYSTYPE == 1) ENTS[i].Y = R_SCREENHEIGHT-1;
 			}
 
 			ENTS[i].update(deltaTime);

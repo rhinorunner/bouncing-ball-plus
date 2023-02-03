@@ -20,6 +20,12 @@ typedef struct RGB_t {
 [ 1 ][ 2 ][ 3 ][ENT]
 [ 0 ][ 0 ][ . ][ENT]
 
+     [ UP]
+[LFT][DWN][RGT]
+
+
+[LFT] = change angle by -R_ANGLESTEP
+[RGT] = change angle by +R_ANGLESTEP
 
 [ + ] = up brightness
 [ - ] = down brightness
@@ -64,17 +70,21 @@ static constexpr float R_DELTAREPLACE = .5;
 
 // 0 = bounce off walls
 // 1 = warp around screen
-static constexpr uint8_t R_PHYSTYPE = 0;
+static constexpr uint8_t R_PHYSTYPE = 1;
 
-/// OTHER
-
-// path because i am stupid
-static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYCASTING/";
+/// KEYBIND STUFF
 
 // ent brightness value
 static uint8_t R_ENTBRIGHTNESS = 255;
 // ent brightness change step value
 static constexpr uint8_t R_BRTSTEP = 5;
+// ent angle step value
+static constexpr uint16_t R_ANGLESTEP = 1;
+
+/// OTHER
+
+// path because i am stupid
+static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYCASTING/";
 
 
 typedef struct Trail_t {
