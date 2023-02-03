@@ -10,45 +10,42 @@
 #include "lib.hpp"
 #include "ent.hpp"
 
-// R = set all ent positions to middle of screen
-// C = clear screen
-// SPACE = pause/unpause
-
 int main() 
 {
 	BetterRand rand;
-	ENTS = {};
+
 	// append ENTS with random ents
-	bool OD = true;
-	for (int i = 0; i < 50; i++) {
+	bool OD = false;
+	for (int i = 0; i < 500; i++) {
 		Ent new_ent
 		(
 			((rand.genRand() % R_SCREENWIDTH)),
 			((rand.genRand() % R_SCREENHEIGHT)),
-			((rand.genRand() % 360)),
-			(3),
+			((rand.genRand() % (360/16)) * (360/16)),
+			((float)(rand.genRand() % 10)/10)+2,
 			{
-				255,
-				255,
-				255
+				(uint8_t)((rand.genRand() % 200)),
+				(uint8_t)((rand.genRand() % 100)),
+				(uint8_t)((rand.genRand() % 100))
 			}
 		);
 
 		// new_ent.useSprite = 1;
 		// fill sprite with a square of random colors
-		for (uint16_t C = 0; C < 4; ++C) 
+		for (uint16_t C = 0; C < 3; ++C) 
 		{
 			std::vector<char> filler {};
-			for (uint16_t R = 0; R < 4; ++R) 
+			for (uint16_t R = 0; R < 3; ++R) 
 				filler.push_back('#');
 			new_ent.sprite.push_back({filler});
 		}
 		new_ent.colorKey.push_back({'#',new_ent.color});
 		
+
 		// set trail color to ent color, slowly fading
 		// fade to black
 		uint16_t trailStep = 255/new_ent.trailLife;
-		if (trailStep <= 0) trailStep = 1;
+		if (trailStep <= 0) trailStep = 2;
 		for (uint16_t Q = 1; Q < new_ent.trailLife; ++Q) 
 		{
 			if (OD)
@@ -140,10 +137,17 @@ int main()
 	float deltaTime = 0;
 	float time_calib = .05;
 	
-	while(quit == false) 
+	while(!quit) 
 	{
-		timeNew = clock();
-		deltaTime = (timeNew - timeOld) * time_calib;
+		if (!R_USEFRAMEDELAY) {
+			timeNew = clock();
+			deltaTime = (timeNew - timeOld) * time_calib;
+		}
+
+		else {
+			SDL_Delay(R_FRAMEDELAY);
+			deltaTime = R_DELTAREPLACE;
+		}
 
 		SDL_PollEvent(&e);
 		
@@ -151,38 +155,66 @@ int main()
 		if (e.type == SDL_QUIT) quit = true; 
 					
 		// key press
-		if (e.type == SDL_KEYDOWN) {
+		if (e.type == SDL_KEYDOWN) 
+		{
 			float midX = R_SCREENWIDTH / 2, midY = R_SCREENHEIGHT / 2;
 			switch (e.key.keysym.sym)
 			{
 			case SDLK_ESCAPE:
 				quit = true;
 				break;
-			case SDLK_r:
-				// reset all ent positions to middle of the screen
+
+			// set all ent positions to middle of the screen
+			case SDLK_KP_MULTIPLY:
 				for (uint16_t i = 0; i < ENTS.size(); ++i) {
 					ENTS[i].X = midX;
 					ENTS[i].Y = midY;
 				}
 				break;
-			case SDLK_c:
+			// set all ent positions to random positions
+			case SDLK_KP_DIVIDE:
+				for (uint16_t i = 0; i < ENTS.size(); ++i) {
+					ENTS[i].X = rand.genRand() % R_SCREENWIDTH;
+					ENTS[i].Y = rand.genRand() % R_SCREENHEIGHT;
+				}
+				break;
+			// set all ent angles to random
+			case SDLK_KP_9:
+				for (uint16_t i = 0; i < ENTS.size(); ++i) {
+					ENTS[i].angle = rand.genRand() % 360;
+				}
+				break;
+
+			// clear screen (only works with no clear)
+			case SDLK_KP_0:
 				SDL_RenderClear(R_RENDERER);
 				break;
-			// pause if spacebar is pressed
-			case SDLK_SPACE:
+
+			// pause
+			case SDLK_KP_PERIOD:
 				while (true) {
 					SDL_PollEvent(&e);
 					if (e.type == SDL_KEYDOWN) {
-						if (e.key.keysym.sym == SDLK_SPACE)  break;
+						if (e.key.keysym.sym == SDLK_KP_PERIOD)  break;
 						if (e.key.keysym.sym == SDLK_ESCAPE) { quit = true; break; }
 					}
 					if (e.type == SDL_QUIT) quit = true; 
 				}
 				// make sure deltatime isnt messed up
-				timeNew = clock();
+				if (R_USEFRAMEDELAY) timeNew = clock();
+				break;
+
+			// increase ent brightness
+			case SDLK_KP_MINUS:
+				if (R_ENTBRIGHTNESS > 0) R_ENTBRIGHTNESS -= R_BRTSTEP;
+				break;
+			// decrease ent brightness
+			case SDLK_KP_PLUS:
+				if (R_ENTBRIGHTNESS < 255) R_ENTBRIGHTNESS += R_BRTSTEP;
 				break;
 			}
 		}
+
 		std::vector<std::thread> threads;
 		// entity loop
 		for (uint16_t i = 0; i < ENTS.size(); ++i) 
@@ -195,19 +227,23 @@ int main()
 			
 			// too far right
 			if (next.first + rightSide > R_SCREENWIDTH) {
-				ENTS[i].reverseAngle(true);
+				if (!R_PHYSTYPE) ENTS[i].reverseAngle(true);
+				else if (R_PHYSTYPE == 1) ENTS[i].X = 0;
 			}
 			// too far left
 			if (next.first < 0) {
-				ENTS[i].reverseAngle(true);
+				if (!R_PHYSTYPE) ENTS[i].reverseAngle(true);
+				else if (R_PHYSTYPE == 1) ENTS[i].X = R_SCREENWIDTH;
 			}
 			// too far down
 			if (next.second + bottomSide > R_SCREENHEIGHT) {
-				ENTS[i].reverseAngle(false);
+				if (!R_PHYSTYPE) ENTS[i].reverseAngle(false);
+				else if (R_PHYSTYPE == 1) ENTS[i].Y = 0;
 			}
 			// too far up
 			if (next.second < 0) {
-				ENTS[i].reverseAngle(false);
+				if (!R_PHYSTYPE) ENTS[i].reverseAngle(false);
+				else if (R_PHYSTYPE == 1) ENTS[i].Y = R_SCREENHEIGHT;
 			}
 
 			ENTS[i].update(deltaTime);
@@ -216,7 +252,7 @@ int main()
 			if (ENTS[i].useTrails) 
 			{
 				// remove old trails
-				// also update trail colors
+				// update trail colors
 				for (uint16_t S = 0; S < ENTS[i].trails.size(); ++S) {
 					ENTS[i].trails[S].second.first --;
 					if (ENTS[i].trails[S].second.first <= 0) {
@@ -224,35 +260,71 @@ int main()
 					}
 					RGB_t COL;
 					// if the lifetime exceeds the trailColor size use the last element
-					if (0)
-					std::cout
-						<< '{'
-						<< (int)ENTS[i].trails[S].second.second.R
-						<< ','
-						<< (int)ENTS[i].trails[S].second.second.G
-						<< ','
-						<< (int)ENTS[i].trails[S].second.second.B
-						<< '}'
-						<< '\n';
-					
 					if (ENTS[i].trails[S].second.first >= ENTS[i].trailColors.size())
 						COL = ENTS[i].trailColors.back();
 					
 					else COL = ENTS[i].trailColors[ENTS[i].trails[S].second.first];
 					
 					ENTS[i].trails[S].second.second = COL;
-					// debug colors
-					if (0)
-					std::cout
-						<< '['
-						<< (int)ENTS[i].trails[S].second.second.R
-						<< ','
-						<< (int)ENTS[i].trails[S].second.second.G
-						<< ','
-						<< (int)ENTS[i].trails[S].second.second.B
-						<< ']'
-						<< '\n';
-				}				
+					auto col_R = ENTS[i].trails[S].second.second.R;
+					if ((col_R-(255-R_ENTBRIGHTNESS) >= 0))
+						col_R -= (255-R_ENTBRIGHTNESS);
+					else col_R = 0;
+
+					auto col_G = ENTS[i].trails[S].second.second.G;
+					if ((col_G-(255-R_ENTBRIGHTNESS) >= 0))
+						col_G -= (255-R_ENTBRIGHTNESS);
+					else col_G = 0;
+
+					auto col_B = ENTS[i].trails[S].second.second.B;
+					if ((col_B-(255-R_ENTBRIGHTNESS) >= 0))
+						col_B -= (255-R_ENTBRIGHTNESS);
+					else col_B = 0;
+
+					SDL_SetRenderDrawColor(
+						R_RENDERER,
+						col_R,
+						col_B,
+						col_G,
+						255
+					);
+
+					// blit sprite for trail
+					for (uint16_t y = 0; y < ENTS[i].sprite.size(); ++y)
+					{
+						for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x)
+						{
+							auto col_R = ENTS[i].trails[S].second.second.R;
+							if ((col_R-(255-R_ENTBRIGHTNESS) >= 0))
+								col_R -= (255-R_ENTBRIGHTNESS);
+							else col_R = 0;
+
+							auto col_G = ENTS[i].trails[S].second.second.G;
+							if ((col_G-(255-R_ENTBRIGHTNESS) >= 0))
+								col_G -= (255-R_ENTBRIGHTNESS);
+							else col_G = 0;
+
+							auto col_B = ENTS[i].trails[S].second.second.B;
+							if ((col_B-(255-R_ENTBRIGHTNESS) >= 0))
+								col_B -= (255-R_ENTBRIGHTNESS);
+							else col_B = 0;
+
+							SDL_SetRenderDrawColor(
+								R_RENDERER,
+								col_R,
+								col_B,
+								col_G,
+								255
+							);
+							// draw the point
+							SDL_RenderDrawPoint(
+								R_RENDERER,
+								ENTS[i].trails[S].first.first + x,
+								ENTS[i].trails[S].first.second + y
+							);
+						}
+					}
+				}
 				
 				// add a new trail
 				ENTS[i].trails.push_back(
@@ -262,66 +334,33 @@ int main()
 					}
 				);
 			}
-			// blit trails
-			if (ENTS[i].useTrails) {
-				for (uint16_t S = 0; S < ENTS[i].trails.size(); ++S) {
-					SDL_SetRenderDrawColor(
-						R_RENDERER,
-						ENTS[i].trails[S].second.second.R,
-						ENTS[i].trails[S].second.second.G,
-						ENTS[i].trails[S].second.second.B,
-						255
-					);
-					// blit sprite for trail
-					if (ENTS[i].useTrails) 
-					{
-						for (uint16_t y = 0; y < ENTS[i].sprite.size(); ++y)
-						{
-							for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x)
-							{
-								SDL_SetRenderDrawColor(
-									R_RENDERER,
-									ENTS[i].trails[S].second.second.R,
-									ENTS[i].trails[S].second.second.G,
-									ENTS[i].trails[S].second.second.B,
-									255
-								);
-								// draw the point
-								SDL_RenderDrawPoint(
-									R_RENDERER,
-									ENTS[i].trails[S].first.first + x,
-									ENTS[i].trails[S].first.second + y
-								);
-							}
-						}
-						if (0)
-						std::cout 
-							<< "rendered ["
-							<< (uint16_t)ENTS[i].trails[S].second.second.R
-							<< ","
-							<< (uint16_t)ENTS[i].trails[S].second.second.G
-							<< ","
-							<< (uint16_t)ENTS[i].trails[S].second.second.B
-							<< "] at ["
-							<< (uint16_t)ENTS[i].trails[S].first.first
-							<< ","
-							<< (uint16_t)ENTS[i].trails[S].first.second
-							<< "]\n";
-					}
-					else SDL_RenderDrawPoint(R_RENDERER, (uint16_t)ENTS[i].trails[S].first.first, (uint16_t)ENTS[i].trails[S].first.second);
-				}
-			}
+
 			// blit pixels for ent sprite
 			if (ENTS[i].useSprite) {
 				for (uint16_t y = 0; y < ENTS[i].sprite.size(); ++y)
 				{
 					for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x) 
 					{
+						auto col_R = ENTS[i].color.R;
+						if ((col_R-(255-R_ENTBRIGHTNESS) >= 0))
+							col_R -= (255-R_ENTBRIGHTNESS);
+						else col_R = 0;
+
+						auto col_G = ENTS[i].color.G;
+						if ((col_G-(255-R_ENTBRIGHTNESS) >= 0))
+							col_G -= (255-R_ENTBRIGHTNESS);
+						else col_G = 0;
+
+						auto col_B = ENTS[i].color.B;
+						if ((col_B-(255-R_ENTBRIGHTNESS) >= 0))
+							col_B -= (255-R_ENTBRIGHTNESS);
+						else col_B = 0;
+
 						SDL_SetRenderDrawColor(
 							R_RENDERER,
-							ENTS[i].color.R,
-							ENTS[i].color.G,
-							ENTS[i].color.B,
+							col_R,
+							col_B,
+							col_G,
 							255
 						);
 						SDL_RenderDrawPoint(
@@ -338,9 +377,9 @@ int main()
 		// present render
 		SDL_RenderPresent(R_RENDERER);
 		SDL_SetRenderDrawColor(R_RENDERER, R_BACKCOLOR.R, R_BACKCOLOR.G, R_BACKCOLOR.B, 255);
-		if (!R_NOCLEAR) SDL_RenderClear(R_RENDERER);
-		//SDL_Delay(R_FRAMEDELAY);
 
+		if (!R_NOCLEAR) SDL_RenderClear(R_RENDERER);
+		
 		timeOld = timeNew;
 	}
 	

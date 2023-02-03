@@ -29,12 +29,12 @@ public:
 		{'P',{255,0  ,255}},
 	};
 	// use trails?
-	bool useTrails = true;
+	bool useTrails = R_USETRAILS;
 	// holds the trails
 	// { { {X,Y}, {LIFE,{R,G,B} }} , ... }
 	std::vector<std::pair<std::pair<float, float>, std::pair<uint16_t,RGB_t>>> trails {};
 	// how long trails should stay
-	uint16_t trailLife = 300;
+	uint16_t trailLife = R_TRAILLIFE;
 	// trail colors as lifetime goes on
 	// last trail will be defaulted to if lifetime exceeds size
 	std::vector<RGB_t> trailColors {color};
@@ -93,14 +93,7 @@ float midX = R_SCREENWIDTH / 2, midY = R_SCREENHEIGHT / 2;
 	const float& velocity,
 	const RGB_t& g_color
 */
-Ent entR{midX,midY,74,1,{255,0,0}};
-Ent entG{midX,midY,303,2,{0,255,0}};
-Ent entB{midX,midY,23,.4,{0,0,255}};
-Ent entW{midX,midY,234.23,2.4999,{255,255,255}};
-Ent entY{midX,midY,12,1.5,{255,255,0}};
-Ent entO{midX,midY,90.24,.82,{255,165,0}};
-Ent entP{midX,midY,29.948,1.287,{255,0,255}};
 
-std::vector<Ent> ENTS = {entR,entG,entB,entW,entY,entO,entP};
+std::vector<Ent> ENTS = {};
 
 #endif
