@@ -37,7 +37,7 @@ int main()
 			((rand.genRand() % R_SCREENWIDTH)),
 			((rand.genRand() % R_SCREENHEIGHT)),
 			(((i%16) % (360 / 16)) * (360 / 16)),
-			(3),
+			(5),
 			{
 				(uint8_t)((rand.genRand() % 100)+156),
 				(uint8_t)((rand.genRand() % 60)),
@@ -150,7 +150,6 @@ int main()
 	clock_t timeOld = clock();
 	clock_t timeNew = clock();
 	float deltaTime = 0;
-	float time_calib = .05;
 	bool turningLeft = false;
 	bool turningRight = false;
 	
@@ -337,9 +336,6 @@ int main()
 					{
 						for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x)
 						{
-							// check if a pixel has already been in that spot
-							if (backMap[y][x].first) break;
-
 							auto col_R = ENTS[i].trails[S].second.second.R;
 							if ((col_R-(255-R_ENTBRIGHTNESS) >= 0))
 								col_R -= (255-R_ENTBRIGHTNESS);
@@ -362,18 +358,28 @@ int main()
 								col_G,
 								255
 							);
+
+							float first = ENTS[i].trails[S].first.second + y;
+							float secon = ENTS[i].trails[S].first.first  + x;
+
+							if (first >= R_SCREENHEIGHT) first = R_SCREENHEIGHT - 1;
+							if (secon >= R_SCREENWIDTH)  secon = R_SCREENWIDTH  - 1;
+
+							// take priority over the brighter pixel
+							if (
+								(
+									backMap[first][secon].second.R +
+									backMap[first][secon].second.G +
+									backMap[first][secon].second.B
+								) > (col_R + col_G + col_B)
+							) break;
+
 							// draw the point
 							SDL_RenderDrawPoint(
 								R_RENDERER,
 								ENTS[i].trails[S].first.first + x,
 								ENTS[i].trails[S].first.second + y
 							);
-							// fill in the backmap
-							float first = ENTS[i].trails[S].first.second + y;
-							float secon = ENTS[i].trails[S].first.first  + x;
-
-							if (first >= R_SCREENHEIGHT) first = R_SCREENHEIGHT - 1;
-							if (secon >= R_SCREENWIDTH ) secon = R_SCREENWIDTH  - 1;
 						
 							backMap[first][secon] = {true,{col_R,col_B,col_G}}; 
 						}
@@ -418,17 +424,28 @@ int main()
 							col_G,
 							255
 						);
-						SDL_RenderDrawPoint(
-							R_RENDERER, 
-							ENTS[i].X + x,
-							ENTS[i].Y + y
-						);
+
 						// I FUCKING HATE SEGFAULTS
 						float first = ENTS[i].Y+y;
 						float secon = ENTS[i].X+x;
 
 						if (first >= R_SCREENHEIGHT) first = R_SCREENHEIGHT - 1;
 						if (secon >= R_SCREENWIDTH ) secon = R_SCREENWIDTH  - 1;
+
+						// take priority over the brighter pixel
+						if (
+							(
+								backMap[first][secon].second.R +
+								backMap[first][secon].second.G +
+								backMap[first][secon].second.B
+							) > (col_R + col_G + col_B)
+						) break;
+
+						SDL_RenderDrawPoint(
+							R_RENDERER, 
+							ENTS[i].X + x,
+							ENTS[i].Y + y
+						);
 						
 						backMap[first][secon] = {true,{col_R,col_B,col_G}}; 
 					}

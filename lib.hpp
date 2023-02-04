@@ -59,9 +59,9 @@ static constexpr uint16_t R_TRAILLIFE = 100;
 /// FRAME STUFF
 
 // delta time calibration
-static constexpr float time_calib = .05;
+static constexpr float time_calib = .008;
 // use frame delays?
-static constexpr bool R_USEFRAMEDELAY = true;
+static constexpr bool R_USEFRAMEDELAY = false;
 // frame delay
 static constexpr uint16_t R_FRAMEDELAY = 0;
 // delta time replacement
