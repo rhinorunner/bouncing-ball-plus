@@ -27,6 +27,8 @@ typedef struct RGB_t {
 [LFT] = change angle by -R_ANGLESTEP
 [RGT] = change angle by +R_ANGLESTEP
 
+[ENT] = use mouse toggle
+
 [ + ] = up brightness
 [ - ] = down brightness
 
@@ -54,7 +56,7 @@ static constexpr bool R_NOCLEAR = false;
 // use trails?
 static constexpr bool R_USETRAILS = true;
 // default trail length
-static constexpr uint16_t R_TRAILLIFE = 100;
+static constexpr uint16_t R_TRAILLIFE = 250;
 
 /// FRAME STUFF
 
@@ -72,6 +74,12 @@ static constexpr float R_DELTAREPLACE = .5;
 // 0 = bounce off walls
 // 1 = warp around screen
 static constexpr uint8_t R_PHYSTYPE = 0;
+// use mouse?
+static bool R_USEMOUSE = true;
+// mouse range
+static constexpr uint16_t R_MOUSERANGE = 100;
+// force in which the mouse pulls (degerees per frame)
+static constexpr float R_MOUSEPULLFORCE = .2;
 
 /// OTHER
 
@@ -83,7 +91,7 @@ static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYC
 // ent brightness value
 static uint8_t R_ENTBRIGHTNESS = 255;
 // ent brightness change step value
-static constexpr uint8_t R_BRTSTEP = 30;
+static constexpr uint8_t R_BRTSTEP = 51;
 // ent angle step value
 static constexpr uint16_t R_ANGLESTEP = 3;
 
@@ -105,18 +113,30 @@ float normalizeAngle(float angle) {
 	return angle;
 }
 
+// this shit is slow because im stupid and lazy
+uint16_t diffBetweenAngles(uint16_t angle1, uint16_t angle2) 
+{
+	uint16_t diffAdd = 0;
+	uint16_t diffSub = 0;
+	
+	while (normalizeAngle(angle1 + diffAdd) != angle2) diffAdd++;
+	while (normalizeAngle(angle1 - diffSub) != angle2) diffSub++;
+
+	return (diffAdd < diffSub) ? diffAdd : diffSub;
+}
+
 class BetterRand {
 public:
 	// adds this to random each time, optional
 	uint32_t extraRand;
 	BetterRand(const uint32_t& ExtraRand = 20907) : extraRand(ExtraRand) {};
-	uint32_t genRand(const uint8_t& extra = 4, bool resetExtraRand = true, uint8_t resetERextraIt = 2) 
+	uint32_t genRand(const uint16_t& extra = 4, bool resetExtraRand = true, uint8_t resetERextraIt = 2) 
 	{
 		if (resetExtraRand) extraRand = genRand(resetERextraIt,false);
 		// set random to unix time
 		auto cool = std::chrono::system_clock::now();
 		auto very = 
-			(unsigned int) 
+			(uint32_t) 
 			std::chrono::time_point_cast
 			<std::chrono::milliseconds>
 			(cool).time_since_epoch().count();

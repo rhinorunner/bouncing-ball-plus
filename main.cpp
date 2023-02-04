@@ -3,6 +3,7 @@
 #include <thread>
 #include <fstream>
 #include <string>
+#include <cmath>
 #include <SDL.h>
 // for some reason this is needed so that it works
 // idk just dont touch it
@@ -18,7 +19,7 @@ static std::vector<std::vector<std::pair<bool,RGB_t>>> backMap {};
 int main() 
 {
 	// better random!
-	BetterRand rand;
+	BetterRand rand (__LINE__ + 913);
 
 	// fill the backmap
 	for (uint16_t H = 0; H < R_SCREENHEIGHT; H++) {
@@ -31,16 +32,16 @@ int main()
 
 	// append ENTS with random ents
 	bool OD = false;
-	for (int i = 0; i < 500; i++) {
+	for (int i = 0; i < 2; i++) {
 		Ent new_ent
 		(
 			((rand.genRand() % R_SCREENWIDTH)),
 			((rand.genRand() % R_SCREENHEIGHT)),
-			(((i%16) % (360 / 16)) * (360 / 16)),
-			(5),
+			(rand.genRand() % 360),
+			(6),
 			{
-				(uint8_t)((rand.genRand() % 100)+156),
 				(uint8_t)((rand.genRand() % 60)),
+				(uint8_t)((rand.genRand() % 60)+156),
 				(uint8_t)((rand.genRand() % 60))
 			}
 		);
@@ -152,6 +153,7 @@ int main()
 	float deltaTime = 0;
 	bool turningLeft = false;
 	bool turningRight = false;
+	uint16_t mouseX, mouseY;
 	
 	while(!quit) 
 	{
@@ -169,6 +171,12 @@ int main()
 		
 		// close window button
 		if (e.type == SDL_QUIT) quit = true; 
+
+		if (e.type == SDL_MOUSEMOTION) {
+			SDL_MOUSEMOTION:
+			mouseX = e.motion.x;
+			mouseY = e.motion.y;
+		}
 					
 		// key press
 		if (e.type == SDL_KEYDOWN) 
@@ -180,6 +188,10 @@ int main()
 				quit = true;
 				break;
 
+			// toggle use mouse
+			case SDLK_KP_ENTER:
+				R_USEMOUSE = !R_USEMOUSE;
+				break;
 			// set all ent positions to middle of the screen
 			case SDLK_KP_MULTIPLY:
 				for (uint16_t i = 0; i < ENTS.size(); ++i) {
@@ -226,7 +238,7 @@ int main()
 					if (e.type == SDL_QUIT) quit = true; 
 				}
 				// make sure deltatime isnt messed up
-				if (R_USEFRAMEDELAY) timeNew = clock();
+				if (!R_USEFRAMEDELAY) timeNew = clock();
 				break;
 
 			// increase ent brightness
@@ -260,6 +272,35 @@ int main()
 			if (turningRight) {
 				ENTS[i].angle += R_ANGLESTEP;
 			}
+
+			// detect if mouse is in range
+			if (R_USEMOUSE) {
+				float dX = (ENTS[i].X - mouseX);
+				float dY = (ENTS[i].Y - mouseY);
+				if (
+					sqrt(
+						pow(dX,2) +
+						pow(dY,2)
+					)
+					<= R_MOUSERANGE) {
+					float angleFromMouse;
+					if      (!dX) angleFromMouse = dY;
+					else if (!dY) angleFromMouse = dX;
+					else          angleFromMouse = atan(dY/dX)*(180/pi);
+					
+					std::cout << 
+						diffBetweenAngles(angleFromMouse,ENTS[i].angle)
+						<< '\n';
+
+					if (diffBetweenAngles(angleFromMouse,ENTS[i].angle) > 1) {
+						if (angleFromMouse <= 180) 
+							ENTS[i].angle -= R_MOUSEPULLFORCE;
+						else if (angleFromMouse > 180) 
+							ENTS[i].angle += R_MOUSEPULLFORCE;
+					}
+				}
+			}
+
 
 			// update and collision detection
 			auto next = ENTS[i].nextUpdate(deltaTime);
