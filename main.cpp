@@ -10,9 +10,24 @@
 #include "lib.hpp"
 #include "ent.hpp"
 
+// each pixel has a value on the backmap
+// used so the program doesnt waste time putting pixels on top of pixels
+// also could do some cool stuff with the pixel knowledge
+static std::vector<std::vector<std::pair<bool,RGB_t>>> backMap {};
+
 int main() 
 {
+	// better random!
 	BetterRand rand;
+
+	// fill the backmap
+	for (uint16_t H = 0; H < R_SCREENHEIGHT; H++) {
+		std::vector<std::pair<bool,RGB_t>> temp {};
+		for (uint16_t W = 0; W < R_SCREENWIDTH; W++) {
+			temp.push_back({false,{0,0,0}});
+		}
+		backMap.push_back(temp);
+	}
 
 	// append ENTS with random ents
 	bool OD = false;
@@ -22,14 +37,14 @@ int main()
 			((rand.genRand() % R_SCREENWIDTH)),
 			((rand.genRand() % R_SCREENHEIGHT)),
 			(((i%16) % (360 / 16)) * (360 / 16)),
-			((float)(rand.genRand() % 10)/10)+2,
+			(3),
 			{
-				(uint8_t)((rand.genRand() % 10)+90+(i % 2 ? 100 : 0)),
-				(uint8_t)((rand.genRand() % 10)+90+(i % 2 ? 100 : 0)),
-				(uint8_t)((rand.genRand() % 10)+90+(i % 2 ? 0 : 100))
+				(uint8_t)((rand.genRand() % 100)+156),
+				(uint8_t)((rand.genRand() % 60)),
+				(uint8_t)((rand.genRand() % 60))
 			}
 		);
-
+		
 		// new_ent.useSprite = 1;
 		// fill sprite with a square of random colors
 		for (uint16_t C = 0; C < 3; ++C) 
@@ -322,6 +337,9 @@ int main()
 					{
 						for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x)
 						{
+							// check if a pixel has already been in that spot
+							if (backMap[y][x].first) break;
+
 							auto col_R = ENTS[i].trails[S].second.second.R;
 							if ((col_R-(255-R_ENTBRIGHTNESS) >= 0))
 								col_R -= (255-R_ENTBRIGHTNESS);
@@ -350,6 +368,14 @@ int main()
 								ENTS[i].trails[S].first.first + x,
 								ENTS[i].trails[S].first.second + y
 							);
+							// fill in the backmap
+							float first = ENTS[i].trails[S].first.second + y;
+							float secon = ENTS[i].trails[S].first.first  + x;
+
+							if (first >= R_SCREENHEIGHT) first = R_SCREENHEIGHT - 1;
+							if (secon >= R_SCREENWIDTH ) secon = R_SCREENWIDTH  - 1;
+						
+							backMap[first][secon] = {true,{col_R,col_B,col_G}}; 
 						}
 					}
 				}
@@ -369,6 +395,7 @@ int main()
 				{
 					for (uint16_t x = 0; x < ENTS[i].sprite[y].size(); ++x) 
 					{
+						if (backMap[y][x].first) break;
 						auto col_R = ENTS[i].color.R;
 						if ((col_R-(255-R_ENTBRIGHTNESS) >= 0))
 							col_R -= (255-R_ENTBRIGHTNESS);
@@ -395,7 +422,15 @@ int main()
 							R_RENDERER, 
 							ENTS[i].X + x,
 							ENTS[i].Y + y
-						);					
+						);
+						// I FUCKING HATE SEGFAULTS
+						float first = ENTS[i].Y+y;
+						float secon = ENTS[i].X+x;
+
+						if (first >= R_SCREENHEIGHT) first = R_SCREENHEIGHT - 1;
+						if (secon >= R_SCREENWIDTH ) secon = R_SCREENWIDTH  - 1;
+						
+						backMap[first][secon] = {true,{col_R,col_B,col_G}}; 
 					}
 				}
 			}
@@ -407,6 +442,12 @@ int main()
 		SDL_SetRenderDrawColor(R_RENDERER, R_BACKCOLOR.R, R_BACKCOLOR.G, R_BACKCOLOR.B, 255);
 
 		if (!R_NOCLEAR) SDL_RenderClear(R_RENDERER);
+
+		for (uint16_t H = 0; H < R_SCREENHEIGHT; H++) {
+			for (uint16_t W = 0; W < R_SCREENWIDTH; W++) {
+				backMap[H][W] = {false,{0,0,0}};
+			}
+		}
 		
 		timeOld = timeNew;
 	}

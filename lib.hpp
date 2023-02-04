@@ -49,6 +49,7 @@ static constexpr uint16_t R_SCREENHEIGHT = 1080;
 // background color
 static const RGB_t R_BACKCOLOR = {0,0,0};
 // if true, dont clear the screen after each frame
+// R_USETRAILS must be false
 static constexpr bool R_NOCLEAR = false;
 // use trails?
 static constexpr bool R_USETRAILS = true;
@@ -70,21 +71,22 @@ static constexpr float R_DELTAREPLACE = .5;
 
 // 0 = bounce off walls
 // 1 = warp around screen
-static constexpr uint8_t R_PHYSTYPE = 1;
+static constexpr uint8_t R_PHYSTYPE = 0;
+
+/// OTHER
+
+// path because i am stupid
+static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYCASTING/";
 
 /// KEYBIND STUFF
 
 // ent brightness value
 static uint8_t R_ENTBRIGHTNESS = 255;
 // ent brightness change step value
-static constexpr uint8_t R_BRTSTEP = 5;
+static constexpr uint8_t R_BRTSTEP = 30;
 // ent angle step value
-static constexpr uint16_t R_ANGLESTEP = 1;
+static constexpr uint16_t R_ANGLESTEP = 3;
 
-/// OTHER
-
-// path because i am stupid
-static const std::string STR_PATH = "C:/Users/cubez/source/repos/RAYCASTING/RAYCASTING/";
 
 
 typedef struct Trail_t {
